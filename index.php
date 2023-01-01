@@ -31,6 +31,7 @@ $f3->route(
             $author = new DB\SQL\Mapper($db, 'personnes');
             $author->load(array('id=?', $message['user']));
             $m['author'] = $author->prenom . " " . $author->nom;
+            $m['isauthor'] = $message->user == $f3->get('SESSION.id');
 
             $messages[] = $m;
 
@@ -68,7 +69,7 @@ $f3->route(
         $message->text = $f3->get('POST.text');
         $message->user = $f3->get('SESSION.id');
         // print_r($f3->get('FILES'));
-        if($f3->get('FILES.photo.tmp_name')!='') {
+        if ($f3->get('FILES.photo.tmp_name') != '') {
             $image_p = resizeImage($f3->get('FILES.photo.tmp_name'), 800, 800);
             ob_start();
             imagejpeg($image_p);
@@ -77,6 +78,24 @@ $f3->route(
             $message->photo = $imageData;
         }
         $message->save();
+        $f3->reroute('/');
+    }
+);
+$f3->route(
+    'GET /delete/@id',
+    function ($f3) {
+        auth($f3);
+        include(dirname(__FILE__) . '/conn.php');
+
+        $db = new DB\SQL(
+            "mysql:host=$host;port=3306;dbname=$db",
+            $user,
+            $pwd
+        );
+        $message = new DB\SQL\Mapper($db, 'messages');
+        $message->load(array('id=?', $f3->get('PARAMS.id')));
+        if ($message->user == $f3->get('SESSION.id'))
+            $message->erase();
         $f3->reroute('/');
     }
 );
@@ -211,9 +230,12 @@ $f3->route(
     function ($f3) {
         // print_r($f3->get('GET'));
 
-        if($f3->exists('GET.success')) $f3->set('success', true); else $f3->set('success', false);
-        if($f3->exists('GET.error')) $f3->set('error', true); else $f3->set('error', false);
-        if($f3->exists('GET.email')) $f3->set('email', true); else $f3->set('email', false);
+        if ($f3->exists('GET.success')) $f3->set('success', true);
+        else $f3->set('success', false);
+        if ($f3->exists('GET.error')) $f3->set('error', true);
+        else $f3->set('error', false);
+        if ($f3->exists('GET.email')) $f3->set('email', true);
+        else $f3->set('email', false);
         $f3->set('content', 'login.html');
         echo \Template::instance()->render('home.html');
         // echo $form;
@@ -224,16 +246,18 @@ $f3->route(
     function ($f3) {
         if ($f3->exists('POST.forgot')) { //password recover
             $token = urlencode(base64_encode(openssl_encrypt($f3->get('POST')['login'], 'aes128', 'random_key', true, 'iv12345678901234')));
-            echo mail($f3->get('POST')['login'], 
-            'Password reset', 
-            'Pour modifier votre mot de passe sur le site familial, veuillez cliquer sur <a href="https://' . $f3->get('SERVER')['HTTP_HOST'] . $f3->get('SERVER')['REQUEST_URI'] . '/reset?token=' . $token . '">ce lien</a>',
-            array(
-                'From' => 'ne-pas-repondre@example.com',
-                'Reply-To' => 'ne-pas-repondre@example.com',
-                'MIME-Version' => '1.0',
-                'Content-type' => 'text/html; charset=UTF-8'
-            ));
-            die;
+            echo mail(
+                $f3->get('POST')['login'],
+                'Password reset',
+                'Pour modifier votre mot de passe sur le site familial, veuillez cliquer sur <a href="https://' . $f3->get('SERVER')['HTTP_HOST'] . $f3->get('SERVER')['REQUEST_URI'] . '/reset?token=' . $token . '">ce lien</a>',
+                array(
+                    'From' => 'ne-pas-repondre@example.com',
+                    'Reply-To' => 'ne-pas-repondre@example.com',
+                    'MIME-Version' => '1.0',
+                    'Content-type' => 'text/html; charset=UTF-8'
+                )
+            );
+            // die;
             $f3->reroute('/login?email');
         } else {
             include(dirname(__FILE__) . '/conn.php');
@@ -252,8 +276,7 @@ $f3->route(
                 //loggeed in!
                 $f3->set('SESSION.id', $user->id);
                 $f3->reroute('/');
-            } else  $f3->reroute('/login?error')
-            ; //TODO message d'erreur et retry
+            } else  $f3->reroute('/login?error'); //TODO message d'erreur et retry
         }
     }
 );
@@ -286,10 +309,48 @@ $f3->route(
         $f3->reroute('/login?success');
     }
 );
+$f3->route(
+    'GET /arbre',
+    function ($f3) {
+        $id = 1;
+        include(dirname(__FILE__) . '/conn.php');
+
+        $db = new DB\SQL(
+            "mysql:host=$host;port=3306;dbname=$db",
+            $user,
+            $pwd
+        );
+        $f3->set('db', $db);
+        // echo renderPersonne($id, $f3);
+        $f3->set('hastext', true);
+        $f3->set('text', renderPersonne($id, $f3));
+        echo \Template::instance()->render('home.html');
+
+    }
+);
+$f3->set('hastext', false);
+
 $f3->run();
 
 
+function renderPersonne($id, $f3)
+{
+    // $id = 30;
+    $enfant = new DB\SQL\Mapper($f3->get('db'), 'filiation');
+    $enfant->load(array('pere_id=?', $id));
+    $t = '';
+    while (!$enfant->dry()) {
+        // print_r($enfant->fils_id);
+        $t .= renderPersonne($enfant->fils_id, $f3);
+        $enfant->skip();
+    }
+    $user = new DB\SQL\Mapper($f3->get('db'), 'personnes');
+    $user->load(array('id=?', $id));
+    $f3->set('user', $user);
+    $p = \Template::instance()->render('user.html');
 
+    return '<div class="personne">' . $p.($t==''?'':$t).'</div>';
+}
 
 
 
@@ -344,6 +405,17 @@ function resizeImage($filename, $max_width, $max_height)
         $orig_width,
         $orig_height
     );
-
+    $exif = exif_read_data($filename, 'IFD0');
+    if (isset($exif['Orientation'])) {
+        if ($exif['Orientation'] == 3) {
+            $image_p = imagerotate($image_p, 180, 0);
+        }
+        if ($exif['Orientation'] == 6) {
+            $image_p = imagerotate($image_p, 270, 0);
+        }
+        if ($exif['Orientation'] == 8) {
+            $image_p = imagerotate($image_p, 90, 0);
+        }
+    }
     return $image_p;
 }

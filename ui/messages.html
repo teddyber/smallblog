@@ -14,10 +14,14 @@
 </form>
 <repeat group="{{ @messages }}" value="{{ @message }}">
     <div>
-        <div>
-            <img class="author" src="{{@BASE}}/picauthor/{{@message.user}}" />
+        <div class="header">
+            <img class="author" src="{{@BASE}}/picauthor/{{@message.user}}" alt="..." />
+            <check if="{{@message.isauthor}}">
+                <a href="/delete/{{@message.id}}">Supprimer</a>
+            </check>
             <p class="author">{{ @message.author }} </p>
             <p class="date">Le {{ @message.message_date }}</p>
+
         </div>
         <img src="{{@BASE}}/pic/{{@message.id}}" class="img-fluid" />
         <p class="text">{{ @message.text }}</p>
