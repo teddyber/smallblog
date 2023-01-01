@@ -1,0 +1,14 @@
+<form enctype="multipart/form-data" id="loginform" action="{{@BASE}}/addmessage" method="POST">
+    <fieldset>
+        <legend>Nouveau message</legend>
+        <div class="form-">
+			<input class="form-control" id="photo" name="photo" type="file" accept="image/*">
+			<label for="photo">Photo</label>
+		</div>
+        <div class="form-floating">
+            <textarea class="form-control" placeholder="Leave a comment here" id="text" name="text"></textarea>
+            <label for="text">Votre message</label>
+        </div>
+        <button type="submit" class="btn btn-primary">Valider</button>
+    </fieldset>
+</form>

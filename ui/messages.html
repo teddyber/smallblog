@@ -1,0 +1,25 @@
+<form enctype="multipart/form-data" id="loginform" action="{{@BASE}}/addmessage" method="POST">
+    <fieldset>
+        <legend> </legend>
+        <div class="form-floating">
+            <textarea class="form-control" placeholder="Ecrivez votre message ici" id="text" name="text"></textarea>
+            <label for="text">&Eacute;crivez votre message ici</label>
+        </div>
+        <div class="form-">
+            <input class="form-control" id="photo" name="photo" type="file" accept="image/*">
+            <!-- <label for="photo">Photo</label> -->
+        </div>
+        <button type="submit" class="btn btn-primary">Publier</button>
+    </fieldset>
+</form>
+<repeat group="{{ @messages }}" value="{{ @message }}">
+    <div>
+        <div>
+            <img class="author" src="{{@BASE}}/picauthor/{{@message.user}}" />
+            <p class="author">{{ @message.author }} </p>
+            <p class="date">Le {{ @message.message_date }}</p>
+        </div>
+        <img src="{{@BASE}}/pic/{{@message.id}}" class="img-fluid" />
+        <p class="text">{{ @message.text }}</p>
+    </div>
+</repeat>
