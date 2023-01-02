@@ -1,3 +1,4 @@
+<check if="{{!@page}}">
 <form enctype="multipart/form-data" id="loginform" action="{{@BASE}}/addmessage" method="POST">
     <fieldset>
         <legend> </legend>
@@ -12,6 +13,7 @@
         <button type="submit" class="btn btn-primary">Publier</button>
     </fieldset>
 </form>
+</check>
 <repeat group="{{ @messages }}" value="{{ @message }}">
     <div>
         <div class="header">

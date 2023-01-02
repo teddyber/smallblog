@@ -5,13 +5,13 @@
     <p>Mauvais login ou mot de passe</p>
 </check>
 <check if="{{@email}}">
-    <p>Un email a été envoyé pour mettre à jour votre mot de passe. Veuillez en suivre les instructions. (Peut-être est-il cahcé dans vos spams?)</p>
+    <p>Un email a été envoyé pour mettre à jour votre mot de passe. Veuillez en suivre les instructions. (Peut-être est-il caché dans vos spams?)</p>
 </check>
 <form id="loginform" action="{{@BASE}}/login" method="POST">
     <fieldset>
         <legend>Connectez-vous !</legend>
         <div class="form-floating mb-3">
-            <input type="email" class="form-control" id="login" name="login" placeholder="name@example.com">
+            <input type="email" class="form-control" id="login" name="login" placeholder="name@example.com" required>
             <label for="login">Adresse email</label>
         </div>
         <div class="form-floating mb-3">

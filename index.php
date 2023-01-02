@@ -2,6 +2,7 @@
 $f3 = require('fff/base.php');
 
 $f3->set('title', 'Famille Carlier');
+$f3->set('email', 'ne-pas-repondre@bcarlier.net');
 
 $f3->set('CACHE', FALSE);
 $f3->set('DEBUG', 3);
@@ -33,9 +34,39 @@ $f3->route(
 
             $message->skip();
         }
+        $f3->set('page', false);
+
         $f3->set('messages', $messages);
         $f3->set('content', 'messages.html');
         echo \Template::instance()->render('home.html');
+    }
+);
+$f3->route(
+    'GET /page/@id',
+    function ($f3) {
+        auth($f3);
+
+        $message = new DB\SQL\Mapper($f3->get('db'), 'messages');
+        $message->load('', array('order' => 'message_date DESC', 'limit' => 20, 'offset'=>20*$f3->get('PARAMS.id')));
+        while (!$message->dry()) {
+            $message->message_date = date('d F Y à H:i', strtotime($message->message_date));
+            $message->message_date = str_replace(array('December'), array('Décembre'), $message->message_date);
+
+            $m = $message->cast();
+
+            $author = new DB\SQL\Mapper($f3->get('db'), 'personnes');
+            $author->load(array('id=?', $message['user']));
+            $m['author'] = $author->prenom . " " . $author->nom;
+            $m['isauthor'] = $message->user == $f3->get('SESSION.id');
+
+            $messages[] = $m;
+
+            $message->skip();
+        }
+        $f3->set('page', true);
+        $f3->set('messages', $messages);
+        $f3->set('content', 'messages.html');
+        echo \Template::instance()->render('messages.html');
     }
 );
 $f3->route(
@@ -201,11 +232,11 @@ $f3->route(
             $token = urlencode(base64_encode(openssl_encrypt($f3->get('POST')['login'], 'aes128', 'random_key', true, 'iv12345678901234')));
             echo mail(
                 $f3->get('POST')['login'],
-                'Password reset',
+                'Réinitialisation du mot de passe',
                 'Pour modifier votre mot de passe sur le site familial, veuillez cliquer sur <a href="https://' . $f3->get('SERVER')['HTTP_HOST'] . $f3->get('SERVER')['REQUEST_URI'] . '/reset?token=' . $token . '">ce lien</a>',
                 array(
-                    'From' => 'ne-pas-repondre@example.com',
-                    'Reply-To' => 'ne-pas-repondre@example.com',
+                    'From' => $f3->get('email'),
+                    'Reply-To' => $f3->get('email'),
                     'MIME-Version' => '1.0',
                     'Content-type' => 'text/html; charset=UTF-8'
                 )
@@ -220,7 +251,7 @@ $f3->route(
                 //logged in!
                 $f3->set('SESSION.id', $user->id);
                 $f3->reroute('/');
-            } else  $f3->reroute('/login?error'); 
+            } else  $f3->reroute('/login?error');
         }
     }
 );
@@ -251,7 +282,6 @@ $f3->route(
         $f3->set('hastext', true);
         $f3->set('text', renderPersonne($id, $f3));
         echo \Template::instance()->render('home.html');
-
     }
 );
 $f3->run();
@@ -271,7 +301,7 @@ function renderPersonne($id, $f3)
     $f3->set('user', $user);
     $p = \Template::instance()->render('user.html');
 
-    return '<div class="personne">' . $p.($t==''?'':$t).'</div>';
+    return '<div class="personne">' . $p . ($t == '' ? '' : $t) . '</div>';
 }
 
 
@@ -280,7 +310,6 @@ function auth($f3)
 {
     if (!$f3->exists('SESSION.id'))
         $f3->reroute('/login');
-
 }
 /**
  * Resize an image and keep the proportions
