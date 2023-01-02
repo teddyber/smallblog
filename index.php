@@ -1,34 +1,30 @@
 <?php
-// include(dirname(__FILE__).'/conn.php');
 $f3 = require('fff/base.php');
+
+$f3->set('title', 'Famille Carlier');
+
 $f3->set('CACHE', FALSE);
 $f3->set('DEBUG', 3);
 $f3->set('UI', 'ui/');
+$f3->set('hastext', false);
+include(dirname(__FILE__) . '/conn.php');
+$db = new DB\SQL("mysql:host=$host;port=3306;dbname=$db", $user, $pwd);
+$f3->set('db', $db);
 
 $f3->route(
     'GET /',
     function ($f3) {
         auth($f3);
 
-        include(dirname(__FILE__) . '/conn.php');
-
-        $db = new DB\SQL(
-            "mysql:host=$host;port=3306;dbname=$db",
-            $user,
-            $pwd
-        );
-        $message = new DB\SQL\Mapper($db, 'messages');
+        $message = new DB\SQL\Mapper($f3->get('db'), 'messages');
         $message->load('', array('order' => 'message_date DESC', 'limit' => 20));
-        // $messages = array();
         while (!$message->dry()) {
             $message->message_date = date('d F Y à H:i', strtotime($message->message_date));
-            // echo  $message->message_date;
             $message->message_date = str_replace(array('December'), array('Décembre'), $message->message_date);
-            // echo $message->message_date;
 
             $m = $message->cast();
 
-            $author = new DB\SQL\Mapper($db, 'personnes');
+            $author = new DB\SQL\Mapper($f3->get('db'), 'personnes');
             $author->load(array('id=?', $message['user']));
             $m['author'] = $author->prenom . " " . $author->nom;
             $m['isauthor'] = $message->user == $f3->get('SESSION.id');
@@ -42,30 +38,12 @@ $f3->route(
         echo \Template::instance()->render('home.html');
     }
 );
-// $f3->route(
-//     'GET /addmessage',
-//     function ($f3) {
-//         auth($f3);
-
-//         $f3->set('content', 'addmessage.html');
-//         echo \Template::instance()->render('home.html');
-//     }
-// );
 $f3->route(
     'POST /addmessage',
     function ($f3) {
         auth($f3);
-        include(dirname(__FILE__) . '/conn.php');
 
-        $db = new DB\SQL(
-            "mysql:host=$host;port=3306;dbname=$db",
-            $user,
-            $pwd
-        );
-        // echo($f3->get('FILES.photo.tmp_name'));
-        // echo file_get_contents($f3->get('FILES.photo.tmp_name'));
-        // die;
-        $message = new DB\SQL\Mapper($db, 'messages');
+        $message = new DB\SQL\Mapper($f3->get('db'), 'messages');
         $message->text = $f3->get('POST.text');
         $message->user = $f3->get('SESSION.id');
         // print_r($f3->get('FILES'));
@@ -85,14 +63,8 @@ $f3->route(
     'GET /delete/@id',
     function ($f3) {
         auth($f3);
-        include(dirname(__FILE__) . '/conn.php');
 
-        $db = new DB\SQL(
-            "mysql:host=$host;port=3306;dbname=$db",
-            $user,
-            $pwd
-        );
-        $message = new DB\SQL\Mapper($db, 'messages');
+        $message = new DB\SQL\Mapper($f3->get('db'), 'messages');
         $message->load(array('id=?', $f3->get('PARAMS.id')));
         if ($message->user == $f3->get('SESSION.id'))
             $message->erase();
@@ -104,18 +76,10 @@ $f3->route(
     function ($f3) {
         auth($f3);
 
-        include(dirname(__FILE__) . '/conn.php');
 
-        $db = new DB\SQL(
-            "mysql:host=$host;port=3306;dbname=$db",
-            $user,
-            $pwd
-        );
-        $message = new DB\SQL\Mapper($db, 'messages');
+        $message = new DB\SQL\Mapper($f3->get('db'), 'messages');
         $message->load(array('id=?', $f3->get('PARAMS.id')));
-        // $messages = array();
         header("Content-type: image/jpeg");
-        // print_r(($message));
         echo $message->photo;
     }
 );
@@ -124,14 +88,7 @@ $f3->route(
     function ($f3) {
         auth($f3);
 
-        include(dirname(__FILE__) . '/conn.php');
-
-        $db = new DB\SQL(
-            "mysql:host=$host;port=3306;dbname=$db",
-            $user,
-            $pwd
-        );
-        $author = new DB\SQL\Mapper($db, 'personnes');
+        $author = new DB\SQL\Mapper($f3->get('db'), 'personnes');
         $author->load(array('id=?', $f3->get('PARAMS.id')));
         header("Content-type: image/jpeg");
         echo $author->pic;
@@ -225,11 +182,8 @@ $f3->route(
 
 // );
 $f3->route(
-    //TODO if success in URI
     'GET /login',
     function ($f3) {
-        // print_r($f3->get('GET'));
-
         if ($f3->exists('GET.success')) $f3->set('success', true);
         else $f3->set('success', false);
         if ($f3->exists('GET.error')) $f3->set('error', true);
@@ -238,7 +192,6 @@ $f3->route(
         else $f3->set('email', false);
         $f3->set('content', 'login.html');
         echo \Template::instance()->render('home.html');
-        // echo $form;
     }
 );
 $f3->route(
@@ -260,23 +213,14 @@ $f3->route(
             // die;
             $f3->reroute('/login?email');
         } else {
-            include(dirname(__FILE__) . '/conn.php');
-
-            $db = new DB\SQL(
-                "mysql:host=$host;port=3306;dbname=$db",
-                $user,
-                $pwd
-            );
-            $user = new DB\SQL\Mapper($db, 'personnes');
+            $user = new DB\SQL\Mapper($f3->get('db'), 'personnes');
             $user->load(array('courriel=?', $f3->get('POST.login')));
 
-            // echo $f3->get('POST.password');
-            // echo $user->password;
             if (password_verify($f3->get('POST.password'), $user->password)) {
-                //loggeed in!
+                //logged in!
                 $f3->set('SESSION.id', $user->id);
                 $f3->reroute('/');
-            } else  $f3->reroute('/login?error'); //TODO message d'erreur et retry
+            } else  $f3->reroute('/login?error'); 
         }
     }
 );
@@ -285,8 +229,6 @@ $f3->route(
     function ($f3) {
         $f3->set('content', 'reset.html');
         echo \Template::instance()->render('home.html');
-
-        // RESET;
     }
 );
 $f3->route(
@@ -295,14 +237,7 @@ $f3->route(
         $email = openssl_decrypt(urldecode(base64_decode($f3->get('POST.token'))), 'aes128', 'random_key', true, 'iv12345678901234');
         $password = password_hash($f3->get('POST.password'), PASSWORD_BCRYPT);
 
-        include(dirname(__FILE__) . '/conn.php');
-
-        $db = new DB\SQL(
-            "mysql:host=$host;port=3306;dbname=$db",
-            $user,
-            $pwd
-        );
-        $user = new DB\SQL\Mapper($db, 'personnes');
+        $user = new DB\SQL\Mapper($f3->get('db'), 'personnes');
         $user->load(array('courriel=?', $email));
         $user->password = $password;
         $user->save();
@@ -313,34 +248,21 @@ $f3->route(
     'GET /arbre',
     function ($f3) {
         $id = 1;
-        include(dirname(__FILE__) . '/conn.php');
-
-        $db = new DB\SQL(
-            "mysql:host=$host;port=3306;dbname=$db",
-            $user,
-            $pwd
-        );
-        $f3->set('db', $db);
-        // echo renderPersonne($id, $f3);
         $f3->set('hastext', true);
         $f3->set('text', renderPersonne($id, $f3));
         echo \Template::instance()->render('home.html');
 
     }
 );
-$f3->set('hastext', false);
-
 $f3->run();
 
 
 function renderPersonne($id, $f3)
 {
-    // $id = 30;
     $enfant = new DB\SQL\Mapper($f3->get('db'), 'filiation');
     $enfant->load(array('pere_id=?', $id));
     $t = '';
     while (!$enfant->dry()) {
-        // print_r($enfant->fils_id);
         $t .= renderPersonne($enfant->fils_id, $f3);
         $enfant->skip();
     }
@@ -358,9 +280,7 @@ function auth($f3)
 {
     if (!$f3->exists('SESSION.id'))
         $f3->reroute('/login');
-    // else {
-    // 	echo $f3->get('SESSION.id');
-    // }
+
 }
 /**
  * Resize an image and keep the proportions
@@ -376,7 +296,6 @@ function resizeImage($filename, $max_width, $max_height)
 
     $width = $orig_width;
     $height = $orig_height;
-    // echo $filename;
     # taller
     if ($height > $max_height) {
         $width = ($max_height / $height) * $width;
