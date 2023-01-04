@@ -5,23 +5,23 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{@title}}</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet"
-        integrity="sha384-rbsA2VBKQhggwzxH7pPCaAqO46MgnOM80zW1RWuH61DGLwZJEdK2Kadq2F9CUG65" crossorigin="anonymous">
     <style>
         .container>* {
-            font-family: Source Sans Pro, sans-serif !important;
             box-shadow: 0 0 30px #ced4da;
             border-radius: 5px;
-            max-width: 550px;
+            max-width: 1024px;
             margin: auto;
             font-size: 1em;
             color: #26648a;
             margin-top: 2em;
         }
 
+        .container>:first-child {
+            margin-top: 5em;
+        }
+
         form {
             padding: .2em;
-            ;
         }
 
         .container div p.text {
@@ -43,6 +43,17 @@
             color: #02394b;
         }
 
+        .img-fluid {
+            height: auto;
+            max-width: 100%;
+            max-height: 800px;
+        }
+
+        .image {
+            text-align: center;
+            clear: both;
+        }
+
         img.author {
             height: 50px;
             width: 50px;
@@ -62,11 +73,155 @@
         .personne {
             padding-left: 1em;
         }
-    </style>
 
+        .level1 td.nom {
+            padding-left: 1em;
+        }
+
+        .level2 td.nom {
+            padding-left: 2em;
+        }
+
+        .level3 td.nom {
+            padding-left: 3em;
+        }
+
+        .level4 td.nom {
+            padding-left: 4em;
+        }
+
+        .level5 td.nom {
+            padding-left: 5em;
+        }
+
+        .spouse .nom {
+            font-style: italic;
+        }
+
+        .wed .nom {
+            font-weight: bold;
+        }
+
+        tr td {
+            border-bottom: 1px solid #ccc;
+            padding: 3px;
+        }
+
+        tr a {
+            text-decoration: none;
+            color: #4684aa
+        }
+
+        tr a:hover {
+            text-decoration: underline;
+        }
+
+        .table-responsive {
+            box-shadow: none;
+            overflow-x: scroll;
+        }
+
+        table {
+            margin: auto;
+            font-size: smaller;
+        }
+
+        table thead {
+            font-size: medium;
+        }
+
+        .navbar {
+            overflow: hidden;
+            position: fixed;
+            top: 0;
+            width: 100%;
+            /* Full width */
+            max-width: 1024px;
+            margin: auto;
+            background-color: #f8f8f8;
+            height: 3em;
+            padding-top: 1em;
+            box-shadow: 0 0 30px #ced4da;
+        }
+
+        textarea {
+            /* padding: 1rem .75rem; */
+            height: calc(3.5rem + 2px);
+            line-height: 1.25;
+            display: block;
+            width: 100%;
+            color: #212529;
+            background-color: #fff;
+            background-clip: padding-box;
+            border: 1px solid #ced4da;
+            border-radius: .375rem;
+            font-family: inherit;
+        }
+
+        fieldset {
+            border: none;
+        }
+
+        fieldset label {
+            display: none;
+        }
+
+        button {
+            border: none;
+            border-radius: .5em;
+            padding: .4em;
+        }
+
+        body {
+            max-width: 1024px;
+            margin: auto;
+            font-family: Roboto, Source Sans Pro, sans-serif !important;
+        }
+
+        .navbar ul li,
+        .navbar ul,
+        h1 {
+            display: inline;
+            padding: 0.1em;
+        }
+
+        .navbar a {
+            text-decoration: none;
+            color: inherit;
+            vertical-align: center;
+        }
+
+        .navbar li a {
+            color: #888;
+            padding: .5em;
+        }
+
+        .navbar li a.active {
+            color: #333;
+            border: 1px solid #888;
+            border-bottom: none;
+            border-radius: .5em .5em 0 0;
+        }
+    </style>
 </head>
 
 <body>
+    <check if="{{isset(@navbar) && @navbar}}">
+        <nav class="navbar">
+            <div class="container-fluid">
+                <h1><a class="navbar-brand" href="{{@BASE}}/">{{@title}}</a></h1>
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link {{isset(@messages)&&@messages?'active':''}}" href="{{@BASE}}/">Messages</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {{isset(@annuaire)&&@annuaire?'active':''}}"
+                            href="{{@BASE}}/annuaire">Annuaire</a>
+                    </li>
+                </ul>
+            </div>
+        </nav>
+    </check>
     <div class="container">
         <check if="{{@hastext}}">
             {{@text | raw}}
@@ -74,36 +229,35 @@
         <check if="{{!@hastext}}">
             <include href="{{@content}}" />
         </check>
-        <div id="demo"></div>
-        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"
-            integrity="sha384-kenU1KFdBIe4zVF0s0G1M5b4hcpxyD9F7jL+jjXkk+Q2h455rYXK/7HAuoJl+0I4"
-            crossorigin="anonymous"></script>
     </div>
     <script>
-        currentPage = 0;
-        waitingForPage = 0
         const toggleDisplay = target => target.style.display = (target.style.display == 'none') ? 'block' : 'none'
         if (document.getElementById('forgot')) document.getElementById('forgot').onchange = function () { toggleDisplay(document.getElementById('password').parentNode) }
-
-        var xhttp = new XMLHttpRequest();
-        xhttp.onreadystatechange = function () {
-            if (this.readyState == 4 && this.status == 200) {
-                // Typical action to be performed when the document is ready:
-                currentPage++
-                document.querySelector(".container").innerHTML += xhttp.responseText;
-            }
-        };
-        window.onscroll = function (ev) {
-            if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight) {
-                console.log(`bottom current ${currentPage} waitingFor ${waitingForPage}`);
-                if (currentPage >= waitingForPage) {
-                    waitingForPage++
-                    xhttp.open("GET", "{{@BASE}}/page/"+waitingForPage, true);
-                    xhttp.send();
+    </script>
+    <check if="{{isset(@messages) && @messages}}">
+        <script>
+            currentPage = 0;
+            waitingForPage = 0
+            var xhttp = new XMLHttpRequest();
+            xhttp.onreadystatechange = function () {
+                if (this.readyState == 4 && this.status == 200) {
+                    // Typical action to be performed when the document is ready:
+                    currentPage++
+                    document.querySelector(".container").innerHTML += xhttp.responseText;
+                }
+            };
+            window.onscroll = function (ev) {
+                if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight) {
+                    console.log(`bottom current ${currentPage} waitingFor ${waitingForPage}`);
+                    if (currentPage >= waitingForPage) {
+                        waitingForPage++
+                        xhttp.open("GET", "{{@BASE}}/page/" + waitingForPage, true);
+                        xhttp.send();
+                    }
                 }
             }
-        }
-    </script>
+        </script>
+    </check>
 </body>
 
 </html>

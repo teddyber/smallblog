@@ -8,6 +8,7 @@ $f3->set('CACHE', FALSE);
 $f3->set('DEBUG', 3);
 $f3->set('UI', 'ui/');
 $f3->set('hastext', false);
+$f3->set('message', true);
 include(dirname(__FILE__) . '/conn.php');
 $db = new DB\SQL("mysql:host=$host;port=3306;dbname=$db", $user, $pwd);
 $f3->set('db', $db);
@@ -35,7 +36,7 @@ $f3->route(
             $message->skip();
         }
         $f3->set('page', false);
-
+        $f3->set('navbar', true);
         $f3->set('messages', $messages);
         $f3->set('content', 'messages.html');
         echo \Template::instance()->render('home.html');
@@ -47,7 +48,7 @@ $f3->route(
         auth($f3);
 
         $message = new DB\SQL\Mapper($f3->get('db'), 'messages');
-        $message->load('', array('order' => 'message_date DESC', 'limit' => 20, 'offset'=>20*$f3->get('PARAMS.id')));
+        $message->load('', array('order' => 'message_date DESC', 'limit' => 20, 'offset' => 20 * $f3->get('PARAMS.id')));
         while (!$message->dry()) {
             $message->message_date = date('d F Y à H:i', strtotime($message->message_date));
             $message->message_date = str_replace(array('December'), array('Décembre'), $message->message_date);
@@ -270,23 +271,75 @@ $f3->route(
 
         $user = new DB\SQL\Mapper($f3->get('db'), 'personnes');
         $user->load(array('courriel=?', $email));
-        $user->password = $password;
-        $user->save();
+        if (!$user->dry()) {
+            $user->password = $password;
+            $user->save();
+        }
         $f3->reroute('/login?success');
     }
 );
-$f3->route(
-    'GET /arbre',
-    function ($f3) {
-        $id = 1;
-        $f3->set('hastext', true);
-        $f3->set('text', renderPersonne($id, $f3));
-        echo \Template::instance()->render('home.html');
-    }
-);
+$f3->route('GET /annuaire', function ($f3) {
+    auth($f3);
+    $f3->reroute('/annuaire/1');
+});
+$f3->route('GET /annuaire/@id', function ($f3) {
+    auth($f3);
+    $id = $f3->get('PARAMS.id');
+    $f3->set('hastext', true);
+    $f3->set('messages', false);
+    $f3->set('annuaire', true);
+    $f3->set('navbar', true);
+    $f3->set('text', '<div class="table-responsive"><table><thead><th>Nom</th><th>Né(e) le</th><th>Adresse</th><th>Téléphone fixe</th><th>Téléphone portable</th><th>Courriel</th></thead>' 
+    . renderPersonneTable($id, $f3)) . "</table></div>";
+    echo \Template::instance()->render('home.html');
+});
 $f3->run();
 
 
+function renderPersonneTable($id, $f3, $level=0)
+{
+    $f3->set('level', $level);
+    $f3->set('class', '');
+    $p='';
+
+    //TODO spouse
+    $mariage = new DB\SQL\Mapper($f3->get('db'), 'mariage');
+    $mariage->load(array('mari_id=? OR femme_id=?', $id, $id), array('order'=> 'ddm'));
+    // echo $f3->get('db')->log();
+    $spouse=false;
+    $i=0;
+    while (!$mariage->dry()) {
+        $i++;
+        $spouse = true;
+        $user = new DB\SQL\Mapper($f3->get('db'), 'personnes');
+        $user->load(array('id=?', ($id == $mariage->mari_id ? $mariage->femme_id : $mariage->mari_id)));
+
+        $f3->set('user', $user);
+        $f3->set('class', 'spouse wed');
+        $f3->set('level', $level);
+        $p .= \Template::instance()->render('userRow.html');
+
+        $rows = $f3->get('db')->exec(
+            'SELECT f1.fils_id FROM filiation f1, filiation f2, personnes' .
+                ' WHERE (f1.pere_id=' . $id . ' AND f2.pere_id=' . $user->id . ') AND f1.fils_id=f2.fils_id AND personnes.id=f1.fils_id' .
+                ' ORDER BY ddn',
+        );
+        foreach ($rows as $key => $r) {
+            $p .= renderPersonneTable($r['fils_id'], $f3, $level+1);
+        }
+        $mariage->skip();
+    }
+    $user = new DB\SQL\Mapper($f3->get('db'), 'personnes');
+    $user->load(array('id=?', $id));
+    $f3->set('user', $user);
+    $f3->set('level', $level);
+    $spouse = $i>0?true:false;
+
+    if ($spouse) $f3->set('class', 'wed');
+    $p = \Template::instance()->render('userRow.html') . $p;
+
+    return $p;
+}
 function renderPersonne($id, $f3)
 {
     $enfant = new DB\SQL\Mapper($f3->get('db'), 'filiation');

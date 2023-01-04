@@ -25,7 +25,7 @@
             <p class="date">Le {{ @message.message_date }}</p>
 
         </div>
-        <img src="{{@BASE}}/pic/{{@message.id}}" class="img-fluid" />
+        <p class="image"><img src="{{@BASE}}/pic/{{@message.id}}" class="img-fluid" /></p>
         <p class="text">{{ @message.text }}</p>
     </div>
 </repeat>
