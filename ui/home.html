@@ -150,7 +150,21 @@
             line-height: 1.25;
             display: block;
             width: 100%;
-            color: #212529;
+            color: #333;
+            background-color: #fff;
+            background-clip: padding-box;
+            border: 1px solid #ced4da;
+            border-radius: .375rem;
+            font-family: inherit;
+        }
+
+        input[type='email'],
+        input[type='password'],
+        input[type='text'] {
+            height: 2em;
+            display: block;
+            width: 100%;
+            color: #333;
             background-color: #fff;
             background-clip: padding-box;
             border: 1px solid #ced4da;
@@ -160,10 +174,6 @@
 
         fieldset {
             border: none;
-        }
-
-        fieldset label {
-            display: none;
         }
 
         button {
@@ -201,6 +211,34 @@
             border: 1px solid #888;
             border-bottom: none;
             border-radius: .5em .5em 0 0;
+        }
+
+        .ddd {
+            position: relative;
+            display: inline-block;
+            border-bottom: 1px dotted black;
+            font-style: normal;
+            /* If you want dots under the hoverable text */
+        }
+
+        /* Tooltip text */
+        .ddd span {
+            visibility: hidden;
+            width: 100px;
+            background-color: #666;
+            color: #fff;
+            text-align: center;
+            padding: 5px 0;
+            border-radius: 6px;
+
+            /* Position the tooltip text - see examples below! */
+            position: absolute;
+            z-index: 1;
+        }
+
+        /* Show the tooltip text when you mouse over the tooltip container */
+        .ddd:hover span {
+            visibility: visible;
         }
     </style>
 </head>

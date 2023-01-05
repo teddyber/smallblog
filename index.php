@@ -22,7 +22,10 @@ $f3->route(
         $message->load('', array('order' => 'message_date DESC', 'limit' => 20));
         while (!$message->dry()) {
             $message->message_date = date('d F Y à H:i', strtotime($message->message_date));
-            $message->message_date = str_replace(array('December'), array('Décembre'), $message->message_date);
+            $message->message_date = str_replace(
+                array('January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'), 
+                array('Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'), 
+                $message->message_date);
 
             $m = $message->cast();
 
@@ -51,8 +54,10 @@ $f3->route(
         $message->load('', array('order' => 'message_date DESC', 'limit' => 20, 'offset' => 20 * $f3->get('PARAMS.id')));
         while (!$message->dry()) {
             $message->message_date = date('d F Y à H:i', strtotime($message->message_date));
-            $message->message_date = str_replace(array('December'), array('Décembre'), $message->message_date);
-
+            $message->message_date = str_replace(
+                array('January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'), 
+                array('Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'), 
+                $message->message_date);
             $m = $message->cast();
 
             $author = new DB\SQL\Mapper($f3->get('db'), 'personnes');
@@ -250,6 +255,8 @@ $f3->route(
 
             if (password_verify($f3->get('POST.password'), $user->password)) {
                 //logged in!
+                $user->last_login = date("Y-m-d H:i:s");
+                $user->save();
                 $f3->set('SESSION.id', $user->id);
                 $f3->reroute('/');
             } else  $f3->reroute('/login?error');
@@ -266,7 +273,10 @@ $f3->route(
 $f3->route(
     'POST /login/reset',
     function ($f3) {
-        $email = openssl_decrypt(urldecode(base64_decode($f3->get('POST.token'))), 'aes128', 'random_key', true, 'iv12345678901234');
+        $email = openssl_decrypt(base64_decode(urldecode($f3->get('POST.token'))), 'aes128', 'random_key', true, 'iv12345678901234');
+        // echo urldecode('wGmTLtjHEYqydD03LhtkCC9e6kQlIFyYweH6rGl%2FTSs%3D');
+        // echo base64_decode(urldecode('wGmTLtjHEYqydD03LhtkCC9e6kQlIFyYweH6rGl%2FTSs%3D'));
+        // echo '_'.openssl_decrypt(base64_decode(urldecode($f3->get('POST.token'))), 'aes128', 'random_key', true, 'iv12345678901234').'-';
         $password = password_hash($f3->get('POST.password'), PASSWORD_BCRYPT);
 
         $user = new DB\SQL\Mapper($f3->get('db'), 'personnes');
@@ -275,6 +285,7 @@ $f3->route(
             $user->password = $password;
             $user->save();
         }
+        // die;
         $f3->reroute('/login?success');
     }
 );
@@ -313,6 +324,8 @@ function renderPersonneTable($id, $f3, $level=0)
         $spouse = true;
         $user = new DB\SQL\Mapper($f3->get('db'), 'personnes');
         $user->load(array('id=?', ($id == $mariage->mari_id ? $mariage->femme_id : $mariage->mari_id)));
+        $user->ddn = $user->ddn=='0000-00-00'?'':$user->ddn = date('d/m/Y', strtotime($user->ddn));
+        $user->ddd = $user->ddd=='0000-00-00'?'0000-00-00':$user->ddd = date('d/m/Y', strtotime($user->ddd));
 
         $f3->set('user', $user);
         $f3->set('class', 'spouse wed');
@@ -331,6 +344,9 @@ function renderPersonneTable($id, $f3, $level=0)
     }
     $user = new DB\SQL\Mapper($f3->get('db'), 'personnes');
     $user->load(array('id=?', $id));
+    $user->ddn = $user->ddn=='0000-00-00'?'':$user->ddn = date('d/m/Y', strtotime($user->ddn));
+    $user->ddd = $user->ddd=='0000-00-00'?'0000-00-00':$user->ddd = date('d/m/Y', strtotime($user->ddd));
+
     $f3->set('user', $user);
     $f3->set('level', $level);
     $spouse = $i>0?true:false;
